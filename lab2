@@ -1,0 +1,80 @@
+#include <iostream>
+#include <thread>
+#include <vector>      
+#include <chrono>
+#include <mutex>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+const double SPEED = 1.0;
+const int DURATION = 10;
+
+mutex coutMutex;
+
+string intToStr(int value) {
+    stringstream ss;
+    ss << value;
+    return ss.str();
+}
+
+struct Position {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+void goldfish_thread(int id) {
+    Position pos;
+    for (int t = 1; t <= DURATION; ++t) {
+        pos.x += SPEED;
+        {
+            lock_guard<mutex> lock(coutMutex);
+            cout << left << setw(12) << "Goldfish " + intToStr(id)
+                << setw(8) << "t=" + intToStr(t)
+                << fixed << setprecision(2)
+                << "x=" << setw(8) << pos.x
+                << "y=" << pos.y << "\n";
+        }
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
+}
+
+void guppy_thread(int id) {
+    Position pos;
+    for (int t = 1; t <= DURATION; ++t) {
+        pos.y += SPEED;
+        {
+            lock_guard<mutex> lock(coutMutex);
+            cout << left << setw(12) << "Guppy " + intToStr(id)
+                << setw(8) << "t=" + intToStr(t)
+                << fixed << setprecision(2)
+                << "x=" << setw(8) << pos.x
+                << "y=" << pos.y << "\n";
+        }
+        this_thread::sleep_for(chrono::milliseconds(500));
+    }
+}
+
+int main() {
+    vector<thread> threads; 
+
+    cout << "===== Fish Movement Simulation =====\n\n";
+    cout << left << setw(12) << "Object"
+        << setw(8) << "Time"
+        << setw(10) << "X"
+        << "Y\n";
+    cout << "---------------------------------------------\n";
+
+    for (int i = 0; i < 2; ++i) {
+        threads.emplace_back(goldfish_thread, i + 1);
+        threads.emplace_back(guppy_thread, i + 1);
+    }
+
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    cout << "\n===== Simulation Complete =====\n";
+    return 0;
+}
